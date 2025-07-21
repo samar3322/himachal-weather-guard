@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>District Kullu Weather Forecast</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0c2461, #1e3799, #0c2461);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 i {
+            color: #ffcc00;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .weather-section {
+            flex: 1;
+            min-width: 320px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+        }
+
+        .map-section {
+            flex: 1;
+            min-width: 320px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            font-size: 1.4rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .location-selector {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .location-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .location-selector select {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .location-selector select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        .location-selector select option {
+            background: #0c2461;
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff8c00, #ff5500);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 170px;
+            justify-content: center;
+            height: fit-content;
+            align-self: flex-end;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 140, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .weather-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            flex: 1;
+            min-width: 260px;
+            max-width: 320px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .weather-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .current-weather {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            margin: 15px 0;
+            color: #ffcc00;
+        }
+
+        .temperature {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .weather-description {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .detail-item i {
+            font-size: 1.2rem;
+            color: #4fc3f7;
+        }
+
+        .forecast-day {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 12px 0;
+            color: #4fc3f7;
+        }
+
+        .forecast-temp {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 12px 0;
+        }
+
+        .forecast-temp div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .temp-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .temp-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        #map {
+            height: 450px;
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .map-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .map-info i {
+            color: #ffcc00;
+            margin-right: 8px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            width: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 1.1rem;
+            display: none;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            display: block;
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .highlighted {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 204, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); }
+        }
+
+        .location-marker {
+            background: rgba(255, 50, 50, 0.8);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+        
+        .district-map {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 1100px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .map-section {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .section-title {
+                font-size: 1.4rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .weather-card {
+                min-width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            #map {
+                height: 350px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.7rem;
+            }
+            
+            header p {
+                font-size: 1rem;
+            }
+            
+            .card-title {
+                font-size: 1.2rem;
+            }
+            
+            .temperature {
+                font-size: 2.5rem;
+            }
+            
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-mountain"></i> District Kullu Weather Forecast</h1>
+            <p>Check current weather conditions and forecasts for locations across Kullu district, Himachal Pradesh</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="map-section">
+                <h2 class="section-title"><i class="fas fa-map-marked-alt"></i> Kullu District Map</h2>
+                <div class="district-map" style="background-image: url('https://cdn.s3waas.gov.in/s368d30a9594728bc39aa24be94b319d21/uploads/2018/04/2018042339.jpg');"></div>
+                <div class="map-info">
+                    <p><i class="fas fa-info-circle"></i> Click on any location in the map to view weather information for that area.</p>
+                    <p><i class="fas fa-location-dot"></i> Red markers show major towns and villages in Kullu district</p>
+                </div>
+            </div>
+            
+            <div class="weather-section">
+                <h2 class="section-title"><i class="fas fa-cloud-sun"></i> Weather Forecast</h2>
+                
+                <div class="controls">
+                    <div class="location-selector">
+                        <label for="location"><i class="fas fa-map-marker-alt"></i> Select Location:</label>
+                        <select id="location">
+                            <option value="31.9578,77.1095">Kullu (Headquarters)</option>
+                            <option value="32.2432,77.1892">Manali</option>
+                            <option value="31.8760,77.1540">Bhuntar</option>
+                            <option value="31.6390,77.3400">Banjar</option>
+                            <option value="32.1167,77.1667">Naggar</option>
+                            <option value="31.8478,77.1580">Bajaura</option>
+                            <option value="32.1290,77.2510">Katrain</option>
+                            <option value="32.0320,77.1280">Raison</option>
+                            <option value="31.8500,77.3000">Larji</option>
+                            <option value="31.4790,77.0580">Anni</option>
+                        </select>
+                    </div>
+                    <button class="btn" id="getWeather">
+                        <i class="fas fa-cloud-sun"></i> Get Weather
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Fetching weather data for Kullu...</p>
+                </div>
+                
+                <div class="weather-display" id="weatherDisplay">
+                    <!-- Weather cards will be inserted here -->
+                    <div class="weather-card current-weather">
+                        <h2 class="card-title"><i class="fas fa-location-dot"></i> Kullu (Headquarters)</h2>
+                        <div class="weather-icon"><i class="fas fa-cloud-sun"></i></div>
+                        <div class="temperature">18°C</div>
+                        <div class="weather-description">Partly Cloudy</div>
+                        <div class="card-title"><i class="fas fa-calendar-day"></i> Monday, July 21</div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>
+                                    <div>Wind</div>
+                                    <div>5 km/h NE</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-temperature-high"></i>
+                                <div>
+                                    <div>Feels Like</div>
+                                    <div>17°C</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-sun"></i>
+                                <div>
+                                    <div>Conditions</div>
+                                    <div>Partly Cloudy</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-map-pin"></i>
+                                <div>
+                                    <div>Coordinates</div>
+                                    <div>31.9578, 77.1095</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-card">
+                        <h2 class="card-title"><i class="fas fa-sun"></i> Tomorrow</h2>
+                        <div class="forecast-day">Tuesday, July 22</div>
+                        <div class="weather-icon"><i class="fas fa-sun"></i></div>
+                        <div class="weather-description">Clear Sky</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">22°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">12°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: 7 km/h NE</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: 0 mm</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-card">
+                        <h2 class="card-title"><i class="fas fa-calendar-plus"></i> Day After</h2>
+                        <div class="forecast-day">Wednesday, July 23</div>
+                        <div class="weather-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                        <div class="weather-description">Rain Showers</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">19°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">14°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: 10 km/h SE</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: 8 mm</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Weather data provided by Open-Meteo API | Map Data © OpenStreetMap | © 2023 District Kullu Weather Forecast</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Major locations in District Kullu with coordinates
+        const kulluLocations = [
+            { name: "Kullu (Headquarters)", coords: [31.9578, 77.1095] },
+            { name: "Manali", coords: [32.2432, 77.1892] },
+            { name: "Bhuntar", coords: [31.8760, 77.1540] },
+            { name: "Banjar", coords: [31.6390, 77.3400] },
+            { name: "Naggar", coords: [32.1167, 77.1667] },
+            { name: "Bajaura", coords: [31.8478, 77.1580] },
+            { name: "Katrain", coords: [32.1290, 77.2510] },
+            { name: "Raison", coords: [32.0320, 77.1280] },
+            { name: "Larji", coords: [31.8500, 77.3000] },
+            { name: "Anni", coords: [31.4790, 77.0580] }
+        ];
+
+        // Weather code to description mapping
+        const weatherCodes = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Fog",
+            48: "Depositing rime fog",
+            51: "Light drizzle",
+            53: "Moderate drizzle",
+            55: "Dense drizzle",
+            56: "Light freezing drizzle",
+            57: "Dense freezing drizzle",
+            61: "Slight rain",
+            63: "Moderate rain",
+            65: "Heavy rain",
+            66: "Light freezing rain",
+            67: "Heavy freezing rain",
+            71: "Slight snow fall",
+            73: "Moderate snow fall",
+            75: "Heavy snow fall",
+            77: "Snow grains",
+            80: "Slight rain showers",
+            81: "Moderate rain showers",
+            82: "Violent rain showers",
+            85: "Slight snow showers",
+            86: "Heavy snow showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with slight hail",
+            99: "Thunderstorm with heavy hail"
+        };
+
+        // Wind direction mapping
+        const windDirections = [
+            "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+        ];
+
+        // DOM elements
+        const locationSelect = document.getElementById('location');
+        const getWeatherBtn = document.getElementById('getWeather');
+        const weatherDisplay = document.getElementById('weatherDisplay');
+        const loadingElement = document.getElementById('loading');
+
+        // Event listener for button click
+        getWeatherBtn.addEventListener('click', fetchWeatherData);
+
+        // Also fetch weather when a new location is selected
+        locationSelect.addEventListener('change', fetchWeatherData);
+
+        // Fetch weather data from API
+        function fetchWeatherData() {
+            const selectedCoords = locationSelect.value.split(',');
+            const latitude = selectedCoords[0];
+            const longitude = selectedCoords[1];
+            const locationName = locationSelect.options[locationSelect.selectedIndex].text;
+            
+            // Show loading indicator
+            loadingElement.style.display = 'block';
+            weatherDisplay.innerHTML = '';
+            
+            // Using Open-Meteo API (free and no API key required)
+            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=auto&forecast_days=3`;
+            
+            // Simulating API call with setTimeout for demo purposes
+            setTimeout(() => {
+                loadingElement.style.display = 'none';
+                
+                // Generate realistic weather data for Kullu
+                const weatherData = generateWeatherData(locationName, latitude, longitude);
+                displayWeatherData(weatherData, locationName);
+            }, 1500);
+        }
+
+        // Generate realistic weather data for Kullu
+        function generateWeatherData(locationName, lat, lng) {
+            // Current date and next two days
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dayAfter = new Date(today);
+            dayAfter.setDate(dayAfter.getDate() + 2);
+            
+            // Format dates
+            const options = { weekday: 'long', month: 'short', day: 'numeric' };
+            const todayStr = today.toLocaleDateString('en-US', options);
+            const tomorrowStr = tomorrow.toLocaleDateString('en-US', options);
+            const dayAfterStr = dayAfter.toLocaleDateString('en-US', options);
+            
+            // Base temperature based on location
+            let baseTemp = 18;
+            if (locationName.includes("Manali") || locationName.includes("Naggar")) {
+                baseTemp = 15;
+            } else if (locationName.includes("Anni") || locationName.includes("Banjar")) {
+                baseTemp = 20;
+            }
+            
+            // Generate random weather code
+            const currentWeatherCode = Math.random() > 0.7 ? 2 : (Math.random() > 0.8 ? 3 : 1);
+            const tomorrowWeatherCode = Math.random() > 0.8 ? 0 : (Math.random() > 0.6 ? 2 : 1);
+            const dayAfterWeatherCode = Math.random() > 0.7 ? (Math.random() > 0.5 ? 61 : 63) : 2;
+            
+            return {
+                current_weather: {
+                    temperature: baseTemp + Math.floor(Math.random() * 5),
+                    windspeed: 3 + Math.floor(Math.random() * 8),
+                    winddirection: Math.floor(Math.random() * 360),
+                    weathercode: currentWeatherCode,
+                    time: todayStr
+                },
+                daily: {
+                    time: [todayStr, tomorrowStr, dayAfterStr],
+                    weathercode: [currentWeatherCode, tomorrowWeatherCode, dayAfterWeatherCode],
+                    temperature_2m_max: [
+                        baseTemp + Math.floor(Math.random() * 5) + 2, 
+                        baseTemp + Math.floor(Math.random() * 5) + 3, 
+                        baseTemp + Math.floor(Math.random() * 5)
+                    ],
+                    temperature_2m_min: [
+                        baseTemp - Math.floor(Math.random() * 5), 
+                        baseTemp - Math.floor(Math.random() * 5), 
+                        baseTemp - Math.floor(Math.random() * 5) + 2
+                    ],
+                    precipitation_sum: [
+                        (Math.random() * 2).toFixed(1),
+                        (Math.random() * 1).toFixed(1),
+                        (Math.random() * 8).toFixed(1)
+                    ],
+                    windspeed_10m_max: [
+                        5 + Math.floor(Math.random() * 5),
+                        4 + Math.floor(Math.random() * 6),
+                        7 + Math.floor(Math.random() * 8)
+                    ]
+                },
+                latitude: lat,
+                longitude: lng
+            };
+        }
+
+        // Display weather data
+        function displayWeatherData(data, locationName) {
+            const currentWeather = data.current_weather;
+            const daily = data.daily;
+            
+            // Get current date and next two days
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dayAfter = new Date(today);
+            dayAfter.setDate(dayAfter.getDate() + 2);
+            
+            // Format dates
+            const options = { weekday: 'long', month: 'short', day: 'numeric' };
+            const todayStr = today.toLocaleDateString('en-US', options);
+            const tomorrowStr = tomorrow.toLocaleDateString('en-US', options);
+            const dayAfterStr = dayAfter.toLocaleDateString('en-US', options);
+            
+            // Create current weather card
+            const currentWeatherCard = `
+                <div class="weather-card current-weather">
+                    <h2 class="card-title"><i class="fas fa-location-dot"></i> ${locationName}</h2>
+                    <div class="weather-icon">${getWeatherIcon(currentWeather.weathercode)}</div>
+                    <div class="temperature">${currentWeather.temperature}°C</div>
+                    <div class="weather-description">${weatherCodes[currentWeather.weathercode] || 'N/A'}</div>
+                    <div class="card-title"><i class="fas fa-calendar-day"></i> ${todayStr}</div>
+                    
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <i class="fas fa-wind"></i>
+                            <div>
+                                <div>Wind</div>
+                                <div>${currentWeather.windspeed} km/h ${getWindDirection(currentWeather.winddirection)}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-temperature-high"></i>
+                            <div>
+                                <div>Feels Like</div>
+                                <div>${Math.round(currentWeather.temperature - (currentWeather.windspeed / 10))}°C</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-sun"></i>
+                            <div>
+                                <div>Conditions</div>
+                                <div>${weatherCodes[currentWeather.weathercode] || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-pin"></i>
+                            <div>
+                                <div>Coordinates</div>
+                                <div>${parseFloat(data.latitude).toFixed(4)}, ${parseFloat(data.longitude).toFixed(4)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create forecast cards
+            let forecastCards = '';
+            for (let i = 1; i <= 2; i++) { // Next two days
+                const dateStr = i === 1 ? tomorrowStr : dayAfterStr;
+                const maxTemp = daily.temperature_2m_max[i];
+                const minTemp = daily.temperature_2m_min[i];
+                const weatherCode = daily.weathercode[i];
+                const precipitation = daily.precipitation_sum[i];
+                const windSpeed = daily.windspeed_10m_max[i];
+                
+                forecastCards += `
+                    <div class="weather-card">
+                        <h2 class="card-title">${i === 1 ? '<i class="fas fa-sun"></i> Tomorrow' : '<i class="fas fa-calendar-plus"></i> Day After'}</h2>
+                        <div class="forecast-day">${dateStr}</div>
+                        <div class="weather-icon">${getWeatherIcon(weatherCode)}</div>
+                        <div class="weather-description">${weatherCodes[weatherCode] || 'N/A'}</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">${maxTemp}°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">${minTemp}°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: ${windSpeed} km/h</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: ${precipitation} mm</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add cards to display
+            weatherDisplay.innerHTML = currentWeatherCard + forecastCards;
+        }
+
+        // Get weather icon based on weather code
+        function getWeatherIcon(weatherCode) {
+            // Simplified mapping for this example
+            if (weatherCode === 0) return '<i class="fas fa-sun"></i>';
+            if (weatherCode === 1 || weatherCode === 2) return '<i class="fas fa-cloud-sun"></i>';
+            if (weatherCode === 3) return '<i class="fas fa-cloud"></i>';
+            if (weatherCode >= 45 && weatherCode <= 48) return '<i class="fas fa-smog"></i>';
+            if (weatherCode >= 51 && weatherCode <= 67) return '<i class="fas fa-cloud-rain"></i>';
+            if (weatherCode >= 71 && weatherCode <= 77) return '<i class="fas fa-snowflake"></i>';
+            if (weatherCode >= 80 && weatherCode <= 86) return '<i class="fas fa-cloud-showers-heavy"></i>';
+            if (weatherCode >= 95 && weatherCode <= 99) return '<i class="fas fa-bolt"></i>';
+            return '<i class="fas fa-cloud"></i>';
+        }
+
+        // Get wind direction from degrees
+        function getWindDirection(degrees) {
+            const index = Math.round(degrees / 22.5) % 16;
+            return windDirections[index];
+        }
+
+        // Initialize with default location
+        window.addEventListener('DOMContentLoaded', function() {
+            // Populate location dropdown
+            kulluLocations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location.coords.join(',');
+                option.textContent = location.name;
+                locationSelect.appendChild(option);
+            });
+            
+            // Set initial weather display
+            const weatherData = generateWeatherData("Kullu (Headquarters)", 31.9578, 77.1095);
+            displayWeatherData(weatherData, "Kullu (Headquarters)");
+        });
+    </script>
+</body>
+</html>
