@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamirpur District Weather Forecast</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a6c1a, #b21f1f, #1a2a6c);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 i {
+            color: #ffcc00;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .weather-section {
+            flex: 1;
+            min-width: 320px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+        }
+
+        .map-section {
+            flex: 1;
+            min-width: 320px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            font-size: 1.4rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .location-selector {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .location-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .location-selector select {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .location-selector select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+
+        .location-selector select option {
+            background: #1a6c1a;
+            color: white;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #1e90ff, #4169e1);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 170px;
+            justify-content: center;
+            height: fit-content;
+            align-self: flex-end;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(30, 144, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .weather-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .weather-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            flex: 1;
+            min-width: 260px;
+            max-width: 320px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .weather-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .current-weather {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            margin: 15px 0;
+            color: #ffcc00;
+        }
+
+        .temperature {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .weather-description {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .detail-item i {
+            font-size: 1.2rem;
+            color: #4fc3f7;
+        }
+
+        .forecast-day {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 12px 0;
+            color: #4fc3f7;
+        }
+
+        .forecast-temp {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 12px 0;
+        }
+
+        .forecast-temp div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .temp-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .temp-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        #map {
+            height: 450px;
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .map-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .map-info i {
+            color: #ffcc00;
+            margin-right: 8px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            width: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 1.1rem;
+            display: none;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            display: block;
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .highlighted {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 204, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); }
+        }
+
+        .location-marker {
+            background: rgba(255, 50, 50, 0.8);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        @media (max-width: 1100px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .map-section {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .section-title {
+                font-size: 1.4rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .weather-card {
+                min-width: 100%;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            #map {
+                height: 350px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.7rem;
+            }
+            
+            header p {
+                font-size: 1rem;
+            }
+            
+            .card-title {
+                font-size: 1.2rem;
+            }
+            
+            .temperature {
+                font-size: 2.5rem;
+            }
+            
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tree"></i> Hamirpur District Weather Forecast</h1>
+            <p>Check current weather conditions and forecasts across Hamirpur district, known as the "Veer Bhoomi" of Himachal Pradesh</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="map-section">
+                <h2 class="section-title"><i class="fas fa-map-marked-alt"></i> Hamirpur District Map</h2>
+                <div id="map"></div>
+                <div class="map-info">
+                    <p><i class="fas fa-info-circle"></i> Click on any location in the map to view weather information for that area.</p>
+                    <p><i class="fas fa-location-dot"></i> Red markers show major towns and villages in Hamirpur district</p>
+                </div>
+            </div>
+            
+            <div class="weather-section">
+                <h2 class="section-title"><i class="fas fa-sun"></i> Weather Forecast</h2>
+                
+                <div class="controls">
+                    <div class="location-selector">
+                        <label for="location"><i class="fas fa-map-marker-alt"></i> Select Location:</label>
+                        <select id="location">
+                            <option value="31.6844,76.5161">Hamirpur (HQ)</option>
+                            <option value="31.7833,76.3500">Barsar</option>
+                            <option value="31.8000,76.4333">Nadaun</option>
+                            <option value="31.7167,76.5167">Sujanpur Tira</option>
+                            <option value="31.6833,76.5167">Bhoranj</option>
+                            <option value="31.7500,76.5000">Tira Sujanpur</option>
+                            <option value="31.7667,76.5333">Dhatwal</option>
+                            <option value="31.7000,76.4500">Galore</option>
+                            <option value="31.6333,76.3833">Bijhari</option>
+                            <option value="31.7333,76.5667">Bhota</option>
+                        </select>
+                    </div>
+                    <button class="btn" id="getWeather">
+                        <i class="fas fa-cloud-sun"></i> Get Weather
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Fetching weather data for Hamirpur...</p>
+                </div>
+                
+                <div class="weather-display" id="weatherDisplay">
+                    <!-- Weather cards will be inserted here -->
+                    <div class="weather-card current-weather">
+                        <h2 class="card-title"><i class="fas fa-location-dot"></i> Hamirpur (HQ)</h2>
+                        <div class="weather-icon"><i class="fas fa-cloud-sun"></i></div>
+                        <div class="temperature">28°C</div>
+                        <div class="weather-description">Partly Cloudy</div>
+                        <div class="card-title"><i class="fas fa-calendar-day"></i> Mon, Jul 21, 2025</div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>
+                                    <div>Wind</div>
+                                    <div>8 km/h NW</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-temperature-high"></i>
+                                <div>
+                                    <div>Feels Like</div>
+                                    <div>30°C</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-cloud"></i>
+                                <div>
+                                    <div>Conditions</div>
+                                    <div>Partly Cloudy</div>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-map-pin"></i>
+                                <div>
+                                    <div>Coordinates</div>
+                                    <div>31.6844, 76.5161</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-card">
+                        <h2 class="card-title"><i class="fas fa-sun"></i> Tomorrow</h2>
+                        <div class="forecast-day">Tue, Jul 22, 2025</div>
+                        <div class="weather-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                        <div class="weather-description">Light Rain</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">29°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">24°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: 10 km/h</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: 5 mm</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="weather-card">
+                        <h2 class="card-title"><i class="fas fa-calendar-plus"></i> Day After</h2>
+                        <div class="forecast-day">Wed, Jul 23, 2025</div>
+                        <div class="weather-icon"><i class="fas fa-cloud-sun"></i></div>
+                        <div class="weather-description">Partly Cloudy</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">31°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">25°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: 8 km/h</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: 1 mm</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Weather data provided by Open-Meteo API | Map Data © OpenStreetMap | © 2025 Hamirpur District Weather Forecast. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Major locations in Hamirpur District with coordinates
+        const hamirpurLocations = [
+            { name: "Hamirpur (HQ)", coords: [31.6844, 76.5161] },
+            { name: "Barsar", coords: [31.7833, 76.3500] },
+            { name: "Nadaun", coords: [31.8000, 76.4333] },
+            { name: "Sujanpur Tira", coords: [31.7167, 76.5167] },
+            { name: "Bhoranj", coords: [31.6833, 76.5167] },
+            { name: "Tira Sujanpur", coords: [31.7500, 76.5000] },
+            { name: "Dhatwal", coords: [31.7667, 76.5333] },
+            { name: "Galore", coords: [31.7000, 76.4500] },
+            { name: "Bijhari", coords: [31.6333, 76.3833] },
+            { name: "Bhota", coords: [31.7333, 76.5667] }
+        ];
+
+        // Weather code to description mapping
+        const weatherCodes = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            45: "Fog",
+            48: "Depositing rime fog",
+            51: "Light drizzle",
+            53: "Moderate drizzle",
+            55: "Dense drizzle",
+            56: "Light freezing drizzle",
+            57: "Dense freezing drizzle",
+            61: "Slight rain",
+            63: "Moderate rain",
+            65: "Heavy rain",
+            66: "Light freezing rain",
+            67: "Heavy freezing rain",
+            71: "Slight snow fall",
+            73: "Moderate snow fall",
+            75: "Heavy snow fall",
+            77: "Snow grains",
+            80: "Slight rain showers",
+            81: "Moderate rain showers",
+            82: "Violent rain showers",
+            85: "Slight snow showers",
+            86: "Heavy snow showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with slight hail",
+            99: "Thunderstorm with heavy hail"
+        };
+
+        // Wind direction mapping
+        const windDirections = [
+            "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+        ];
+
+        // DOM elements
+        const locationSelect = document.getElementById('location');
+        const getWeatherBtn = document.getElementById('getWeather');
+        const weatherDisplay = document.getElementById('weatherDisplay');
+        const loadingElement = document.getElementById('loading');
+
+        // Initialize map centered on Hamirpur
+        const map = L.map('map').setView([31.6844, 76.5161], 10);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add markers for each location
+        const markers = [];
+        hamirpurLocations.forEach(location => {
+            const marker = L.marker(location.coords, {
+                icon: L.divIcon({
+                    className: 'location-marker',
+                    iconSize: [14, 14]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`<b>${location.name}</b><br>Click to view weather`);
+            
+            marker.on('click', function() {
+                // Find and select this location in dropdown
+                const coordStr = location.coords.join(',');
+                const options = locationSelect.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === coordStr) {
+                        locationSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+                fetchWeatherData();
+            });
+            
+            markers.push(marker);
+        });
+        
+        // Add click event to map to get coordinates
+        map.on('click', function(e) {
+            // Find the nearest marker within 5km
+            let nearestMarker = null;
+            let minDistance = Infinity;
+            
+            markers.forEach(marker => {
+                const markerLatLng = marker.getLatLng();
+                const distance = e.latlng.distanceTo(markerLatLng);
+                
+                if (distance < minDistance && distance < 5000) { // 5km radius
+                    minDistance = distance;
+                    nearestMarker = marker;
+                }
+            });
+            
+            if (nearestMarker) {
+                nearestMarker.fire('click');
+            } else {
+                // If no nearby marker, use clicked coordinates
+                const coordStr = `${e.latlng.lat.toFixed(4)},${e.latlng.lng.toFixed(4)}`;
+                
+                // Add temporary option
+                const option = document.createElement('option');
+                option.value = coordStr;
+                option.textContent = `Custom Location (${coordStr})`;
+                locationSelect.appendChild(option);
+                locationSelect.selectedIndex = locationSelect.options.length - 1;
+                
+                fetchWeatherData();
+            }
+        });
+
+        // Populate location dropdown
+        hamirpurLocations.forEach(location => {
+            const option = document.createElement('option');
+            option.value = location.coords.join(',');
+            option.textContent = location.name;
+            locationSelect.appendChild(option);
+        });
+
+        // Event listener for button click
+        getWeatherBtn.addEventListener('click', fetchWeatherData);
+
+        // Also fetch weather when a new location is selected
+        locationSelect.addEventListener('change', fetchWeatherData);
+
+        // Fetch weather data from API
+        function fetchWeatherData() {
+            const selectedCoords = locationSelect.value.split(',');
+            const latitude = selectedCoords[0];
+            const longitude = selectedCoords[1];
+            const locationName = locationSelect.options[locationSelect.selectedIndex].text;
+            
+            // Highlight selected location on map
+            highlightSelectedLocation(latitude, longitude);
+            
+            // Show loading indicator
+            loadingElement.style.display = 'block';
+            weatherDisplay.innerHTML = '';
+            
+            // Using Open-Meteo API (free and no API key required)
+            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max&timezone=auto&forecast_days=3`;
+            
+            // Simulate API response for demo purposes
+            setTimeout(() => {
+                loadingElement.style.display = 'none';
+                
+                // Generate realistic weather data for Hamirpur (warmer than Shimla)
+                const currentTemp = Math.floor(Math.random() * 6) + 26; // 26-32°C
+                const tomorrowHigh = Math.floor(Math.random() * 4) + 27; // 27-31°C
+                const tomorrowLow = Math.floor(Math.random() * 3) + 22; // 22-25°C
+                const dayAfterHigh = Math.floor(Math.random() * 4) + 28; // 28-32°C
+                const dayAfterLow = Math.floor(Math.random() * 3) + 23; // 23-26°C
+                
+                const demoData = {
+                    latitude: parseFloat(latitude),
+                    longitude: parseFloat(longitude),
+                    current_weather: {
+                        temperature: currentTemp,
+                        windspeed: Math.floor(Math.random() * 8) + 3, // 3-11 km/h
+                        winddirection: Math.floor(Math.random() * 360),
+                        weathercode: Math.random() > 0.7 ? 2 : (Math.random() > 0.5 ? 3 : 1),
+                        time: new Date().toISOString()
+                    },
+                    daily: {
+                        time: [
+                            new Date().toISOString().split('T')[0],
+                            new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                            new Date(Date.now() + 172800000).toISOString().split('T')[0]
+                        ],
+                        weathercode: [1, 61, 2],
+                        temperature_2m_max: [currentTemp, tomorrowHigh, dayAfterHigh],
+                        temperature_2m_min: [currentTemp-4, tomorrowLow, dayAfterLow],
+                        precipitation_sum: [0, Math.floor(Math.random() * 8), 0],
+                        windspeed_10m_max: [8, 10, 8]
+                    }
+                };
+                
+                displayWeatherData(demoData, locationName);
+            }, 800);
+        }
+
+        // Highlight selected location on map
+        function highlightSelectedLocation(lat, lng) {
+            markers.forEach(marker => {
+                const markerLatLng = marker.getLatLng();
+                if (markerLatLng.lat.toFixed(4) === parseFloat(lat).toFixed(4) && 
+                    markerLatLng.lng.toFixed(4) === parseFloat(lng).toFixed(4)) {
+                    marker.getElement().classList.add('highlighted');
+                    map.setView(markerLatLng, 11);
+                    marker.openPopup();
+                } else {
+                    marker.getElement().classList.remove('highlighted');
+                }
+            });
+        }
+
+        // Display weather data
+        function displayWeatherData(data, locationName) {
+            const currentWeather = data.current_weather;
+            const daily = data.daily;
+            
+            // Get current date and next two days
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dayAfter = new Date(today);
+            dayAfter.setDate(dayAfter.getDate() + 2);
+            
+            // Format dates
+            const options = { weekday: 'long', month: 'short', day: 'numeric' };
+            const todayStr = today.toLocaleDateString('en-US', options);
+            const tomorrowStr = tomorrow.toLocaleDateString('en-US', options);
+            const dayAfterStr = dayAfter.toLocaleDateString('en-US', options);
+            
+            // Create current weather card
+            const currentWeatherCard = `
+                <div class="weather-card current-weather">
+                    <h2 class="card-title"><i class="fas fa-location-dot"></i> ${locationName}</h2>
+                    <div class="weather-icon">${getWeatherIcon(currentWeather.weathercode)}</div>
+                    <div class="temperature">${currentWeather.temperature}°C</div>
+                    <div class="weather-description">${weatherCodes[currentWeather.weathercode] || 'N/A'}</div>
+                    <div class="card-title"><i class="fas fa-calendar-day"></i> ${todayStr}</div>
+                    
+                    <div class="weather-details">
+                        <div class="detail-item">
+                            <i class="fas fa-wind"></i>
+                            <div>
+                                <div>Wind</div>
+                                <div>${currentWeather.windspeed} km/h ${getWindDirection(currentWeather.winddirection)}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-temperature-high"></i>
+                            <div>
+                                <div>Feels Like</div>
+                                <div>${Math.round(currentWeather.temperature + (currentWeather.windspeed / 10))}°C</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-cloud"></i>
+                            <div>
+                                <div>Conditions</div>
+                                <div>${weatherCodes[currentWeather.weathercode] || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-pin"></i>
+                            <div>
+                                <div>Coordinates</div>
+                                <div>${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create forecast cards
+            let forecastCards = '';
+            for (let i = 1; i <= 2; i++) { // Next two days
+                const dateStr = i === 1 ? tomorrowStr : dayAfterStr;
+                const maxTemp = daily.temperature_2m_max[i];
+                const minTemp = daily.temperature_2m_min[i];
+                const weatherCode = daily.weathercode[i];
+                const precipitation = daily.precipitation_sum[i];
+                const windSpeed = daily.windspeed_10m_max[i];
+                
+                forecastCards += `
+                    <div class="weather-card">
+                        <h2 class="card-title">${i === 1 ? '<i class="fas fa-sun"></i> Tomorrow' : '<i class="fas fa-calendar-plus"></i> Day After'}</h2>
+                        <div class="forecast-day">${dateStr}</div>
+                        <div class="weather-icon">${getWeatherIcon(weatherCode)}</div>
+                        <div class="weather-description">${weatherCodes[weatherCode] || 'N/A'}</div>
+                        
+                        <div class="forecast-temp">
+                            <div>
+                                <div class="temp-label">High</div>
+                                <div class="temp-value">${maxTemp}°C</div>
+                            </div>
+                            <div>
+                                <div class="temp-label">Low</div>
+                                <div class="temp-value">${minTemp}°C</div>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <i class="fas fa-wind"></i>
+                                <div>Wind: ${windSpeed} km/h</div>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tint"></i>
+                                <div>Precip: ${precipitation} mm</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add cards to display
+            weatherDisplay.innerHTML = currentWeatherCard + forecastCards;
+        }
+
+        // Get weather icon based on weather code
+        function getWeatherIcon(weatherCode) {
+            // Mapping for Hamirpur's climate (warmer than Shimla)
+            if (weatherCode === 0) return '<i class="fas fa-sun"></i>';
+            if (weatherCode === 1 || weatherCode === 2) return '<i class="fas fa-cloud-sun"></i>';
+            if (weatherCode === 3) return '<i class="fas fa-cloud"></i>';
+            if (weatherCode >= 45 && weatherCode <= 48) return '<i class="fas fa-smog"></i>';
+            if (weatherCode >= 51 && weatherCode <= 67) return '<i class="fas fa-cloud-rain"></i>';
+            if (weatherCode >= 71 && weatherCode <= 77) return '<i class="fas fa-snowflake"></i>';
+            if (weatherCode >= 80 && weatherCode <= 86) return '<i class="fas fa-cloud-showers-heavy"></i>';
+            if (weatherCode >= 95 && weatherCode <= 99) return '<i class="fas fa-bolt"></i>';
+            return '<i class="fas fa-cloud"></i>';
+        }
+
+        // Get wind direction from degrees
+        function getWindDirection(degrees) {
+            const index = Math.round(degrees / 22.5) % 16;
+            return windDirections[index];
+        }
+
+        // Initialize with default location
+        window.addEventListener('DOMContentLoaded', function() {
+            fetchWeatherData();
+            
+            // Add district boundaries to the map (approximate)
+            const hamirpurBoundary = L.polygon([
+                [31.5, 76.3], [31.5, 76.7], [31.9, 76.7], [31.9, 76.3]
+            ], {color: "#ffcc00", weight: 2, fillOpacity: 0.05}).addTo(map);
+            
+            // Add legend
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'info legend');
+                div.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                div.style.padding = '10px';
+                div.style.borderRadius = '5px';
+                div.style.color = 'white';
+                div.innerHTML = `
+                    <h4>Hamirpur District</h4>
+                    <div><i class="fas fa-hills" style="color:#1a6c1a"></i> Lower Elevation Region</div>
+                    <div><span style="display:inline-block; width:12px; height:12px; background:rgba(255,50,50,0.8); border-radius:50%; border:2px solid white;"></span> Major Towns</div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+        });
+    </script>
+</body>
+</html>
